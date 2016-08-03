@@ -29,13 +29,14 @@ mainFileDescription = \
        weak = True,
        subMatchers = [
          SM(name = "header",
-         startReStr = r"\s*\|\s*Elk version\s*(?P<program_version>[-a-zA-Z0-9]+)\s*started\s*=",
+         startReStr = r"\s*\|\s*Elk version\s*(?P<program_version>[-a-zA-Z0-9\.]+)\s*started\s*",
          fixedStartValues={'program_name': 'elk', 'program_basis_set_type': '(L)APW+lo' },
             sections = ["section_run", "section_method"],
          subMatchers = [
            SM(name = 'input',
-              startReStr = r"\|\sGroundi\-state run starting from atomic densities\s\|\s",
-              endReStr = r"\|\sDensity and potential initialised from atomic data\s",
+               startReStr = r"All units  are atomic \(Hartree, Bohr, etc.\)\s",
+#              startReStr = r"\|\sGround-state run starting from atomic densities\s\|\s",
+#              endReStr = r"\|\sDensity and potential initialised from atomic data\s",
               sections = ['section_system'],
               subMatchers = [
     SM(r"\s*Unit cell volume\s*:\s*(?P<x_elk_unit_cell_volume__bohr3>[-0-9.]+)"),
