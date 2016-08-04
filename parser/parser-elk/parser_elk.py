@@ -69,7 +69,28 @@ mainFileDescription = \
     SM(startReStr = r"\s*(?P<x_elk_geometry_reciprocal_lattice_vector_x__bohr_1>[-+0-9.]+)\s+(?P<x_elk_geometry_reciprocal_lattice_vector_y__bohr_1>[-+0-9.]+)\s+(?P<x_elk_geometry_reciprocal_lattice_vector_z__bohr_1>[-+0-9.]+)", repeats = True)
                 ]),
     SM(r"\s*Unit cell volume\s*:\s*(?P<x_elk_unit_cell_volume__bohr3>[-0-9.]+)"),
-    SM(r"\s*Brillouin zone volume\s*:\s*(?P<x_elk_brillouin_zone_volume__bohr_3>[-0-9.]+)")
+    SM(r"\s*Brillouin zone volume\s*:\s*(?P<x_elk_brillouin_zone_volume__bohr_3>[-0-9.]+)"),
+    SM(r"\s*Species\s*:\s*[0-9]\s*\((?P<x_elk_geometry_atom_labels>[-a-zA-Z0-9]+)\)", repeats = True,
+       subMatchers = [
+    SM(r"\s*muffin-tin radius\s*:\s*(?P<x_elk_muffin_tin_radius__bohr>[-0-9.]+)"),
+    SM(r"\s*number of radial points in muffin-tin\s*:\s*(?P<x_elk_muffin_tin_points>[-0-9.]+)"),
+    SM(startReStr = r"\s*atomic positions\s*\(lattice\)\, magnetic fields \(Cartesian\)\s*:\s*",
+      subMatchers = [
+        SM(r"\s*(?P<x_elk_geometry_atom_number>[+0-9]+)\s*:\s*(?P<x_elk_geometry_atom_positions_x__bohr>[-+0-9.]+)\s*(?P<x_elk_geometry_atom_positions_y__bohr>[-+0-9.]+)\s*(?P<x_elk_geometry_atom_positions_z__bohr>[-+0-9.]+)", repeats = True)
+      ])
+    ]),
+    SM(r"\s*k-point grid\s*:\s*(?P<x_elk_number_kpoint_x>[-0-9.]+)\s+(?P<x_elk_number_kpoint_y>[-0-9.]+)\s+(?P<x_elk_number_kpoint_z>[-0-9.]+)"),
+    SM(r"\s*k-point offset\s*:\s*(?P<x_elk_kpoint_offset_x>[-0-9.]+)\s+(?P<x_elk_kpoint_offset_y>[-0-9.]+)\s+(?P<x_elk_kpoint_offset_z>[-0-9.]+)"),
+    SM(r"\s*Total number of k-points\s*:\s*(?P<x_elk_number_kpoints>[-0-9.]+)"),
+    SM(r"\s*Muffin-tin radius times maximum \|G\+k\|\s*:\s*(?P<x_elk_rgkmax__bohr>[-0-9.]+)"),
+    SM(r"\s*Maximum \|G\+k\| for APW functions\s*:\s*(?P<x_elk_gkmax__bohr_1>[-0-9.]+)"),
+    SM(r"\s*Maximum \|G\| for potential and density\s*:\s*(?P<x_elk_gmaxvr__bohr_1>[-0-9.]+)"),
+    SM(r"\s*G-vector grid sizes\s*:\s*(?P<x_elk_gvector_size_x>[-0-9.]+)\s+(?P<x_elk_gvector_size_y>[-0-9.]+)\s+(?P<x_elk_gvector_size_z>[-0-9.]+)"),
+    SM(r"\s*Number of G-vectors\s*:\s*(?P<x_elk_gvector_total>[-0-9.]+)"),
+    SM(startReStr = r"\s*Maximum angular momentum used for\s*",
+        subMatchers = [
+          SM(r"\s*APW functions\s*:\s*(?P<x_elk_lmaxapw>[-0-9.]+)")
+        ]),
            ] )
           ])
     ])
