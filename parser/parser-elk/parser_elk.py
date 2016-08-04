@@ -4,7 +4,7 @@ import numpy as np
 from nomadcore.simple_parser import mainFunction, AncillaryParser, CachingLevel
 from nomadcore.simple_parser import SimpleMatcher as SM
 from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
-import os, sys, json
+import os, sys, json, elk_parser_dos
 
 class ElkContext(object):
     """context for elk parser"""
@@ -39,6 +39,16 @@ class ElkContext(object):
               [recLatticeX[1],recLatticeY[1],recLatticeZ[1]],
               [recLatticeX[2],recLatticeY[2],recLatticeZ[2]]]
       backend.addValue("x_elk_simulation_reciprocal_cell", recCell)
+
+    def onClose_section_single_configuration_calculation(self, backend, gIndex, section):
+      dirPath = os.path.dirname(self.parser.fIn.name)
+      dosFile = os.path.join(dirPath, "TDOS.OUT")
+      if os.path.exists(dosFile):
+        with open(dosFile) as f:
+          elk_parser_dos.parseDos(f, backend)
+
+    def onClose_section_system(self, backend, gIndex, section):
+      backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
 
 # description of the input
 mainFileDescription = \
