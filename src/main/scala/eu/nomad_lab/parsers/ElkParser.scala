@@ -22,7 +22,9 @@ object ElkParser extends SimpleExternalParserGenerator(
       )) :: Nil
   ),
   mainFileTypes = Seq("text/.*"),
-  mainFileRe = """:LABEL[0-9]+: using WIEN2k_(?<version>[0-9.]+) \(Release (?<release>[0-9/.]+)\) in """.r,
+  mainFileRe = """\+-----------+\+
+\| Elk version (?<version>[0-9.a-zA-Z]+) started \|
+\+----------+\+""".r,
   cmd = Seq(DefaultPythonInterpreter.pythonExe(), "${envDir}/parsers/elk/parser/parser-elk/parser_elk.py",
     "--uri", "${mainFileUri}", "${mainFilePath}"),
   resList = Seq(
