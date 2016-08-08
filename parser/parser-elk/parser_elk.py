@@ -4,7 +4,8 @@ import numpy as np
 from nomadcore.simple_parser import mainFunction, AncillaryParser, CachingLevel
 from nomadcore.simple_parser import SimpleMatcher as SM
 from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
-import os, sys, json, elk_parser_dos
+from nomadcore.unit_conversion import unit_conversion
+import os, sys, json, logging
 
 class ElkContext(object):
     """context for elk parser"""
@@ -44,8 +45,23 @@ class ElkContext(object):
       dirPath = os.path.dirname(self.parser.fIn.name)
       dosFile = os.path.join(dirPath, "TDOS.OUT")
       if os.path.exists(dosFile):
+        dosGIndex=backend.openSection("section_dos")
         with open(dosFile) as f:
-          elk_parser_dos.parseDos(f, backend)
+            dosE=[]
+            dosV=[]
+            fromH = unit_conversion.convert_unit_function("hartree", "J")
+            while True:
+                line = f.readline()
+                if not line: break
+                nrs = list(map(float,line.split()))
+                if len(nrs) == 2:
+                    dosV.append(nrs[1])
+                    dosE.append(fromH(nrs[0]))
+                elif len(nrs) != 0:
+                    raise Exception("Found more than two values in dos file %s" % dosFile)
+            backend.addArrayValues("dos_values", np.asarray(dosV))
+            backend.addArrayValues("dos_energies", np.asarray(dosE))
+        backend.closeSection("section_dos", dosGIndex)
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
