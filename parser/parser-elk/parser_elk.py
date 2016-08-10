@@ -44,6 +44,7 @@ class ElkContext(object):
     def onClose_section_single_configuration_calculation(self, backend, gIndex, section):
       dirPath = os.path.dirname(self.parser.fIn.name)
       dosFile = os.path.join(dirPath, "TDOS.OUT")
+      eigvalFile = os.path.join(dirPath, "EIGVAL.OUT")
       if os.path.exists(dosFile):
         dosGIndex=backend.openSection("section_dos")
         with open(dosFile) as f:
@@ -62,6 +63,20 @@ class ElkContext(object):
             backend.addArrayValues("dos_values", np.asarray(dosV))
             backend.addArrayValues("dos_energies", np.asarray(dosE))
         backend.closeSection("section_dos", dosGIndex)
+      if os.path.exists(eigvalFile):
+        eigvalGIndex = backend.openSection("section_eigenvalues")
+        with open(eigvalFile) as g:
+            eigvalKpoint=[]
+            eigvalVal=[]
+            eigvalOcc=[]
+            fromH = unit_conversion.convert_unit_function("hartree", "J")
+            while 1:
+              s = g.readline()
+              if not s: break
+              s = s.strip()
+              if len(s) > 50:
+                eigvalKpoint.append(list(map(float, s.split()[1:4])))
+            backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
