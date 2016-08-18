@@ -70,15 +70,12 @@ class ElkContext(object):
             eigvalVal=[[],[]]
             eigvalOcc=[]
             fromH = unit_conversion.convert_unit_function("hartree", "J")
-            i = 0
             while 1:
-              i += 1
-              print ("i= ", i)
               s = g.readline()
               if not s: break
               s = s.strip()
 #              print ("s= ", s)
-              print ("len(s)= ", len(s))
+#              print ("len(s)= ", len(s))
               if len(s) < 20:
                 continue
               elif len(s) > 50:
@@ -94,8 +91,9 @@ class ElkContext(object):
                   n, e, occ = s.split()
                   eigvalVal[0][-1].append(int(n))
                   eigvalVal[1][-1].append(float(e))
-                  print ("eigvalVal= ", eigvalVal)
+#                  print ("eigvalVal= ", eigvalVal)
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
+            backend.addArrayValues("eigenvalues_values", np.asarray(eigvalVal))
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
