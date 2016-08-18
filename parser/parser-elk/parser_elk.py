@@ -90,7 +90,7 @@ class ElkContext(object):
                 else:
                   n, e, occ = s.split()
                   eigvalVal[0][-1].append(int(n))
-                  eigvalVal[1][-1].append(float(e))
+                  eigvalVal[1][-1].append(fromH(float(e)))
 #                  print ("eigvalVal= ", eigvalVal)
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
             backend.addArrayValues("eigenvalues_values", np.asarray(eigvalVal))
