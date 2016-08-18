@@ -67,15 +67,34 @@ class ElkContext(object):
         eigvalGIndex = backend.openSection("section_eigenvalues")
         with open(eigvalFile) as g:
             eigvalKpoint=[]
-            eigvalVal=[]
+            eigvalVal=[[],[]]
             eigvalOcc=[]
             fromH = unit_conversion.convert_unit_function("hartree", "J")
+            i = 0
             while 1:
+              i += 1
+              print ("i= ", i)
               s = g.readline()
               if not s: break
               s = s.strip()
-              if len(s) > 50:
+#              print ("s= ", s)
+              print ("len(s)= ", len(s))
+              if len(s) < 20:
+                continue
+              elif len(s) > 50:
+                eigvalVal[0].append([])
+                eigvalVal[1].append([])
                 eigvalKpoint.append(list(map(float, s.split()[1:4])))
+#                print ("eigvalKpoint= ", eigvalKpoint)
+              else:
+                try: int(s[0])
+                except ValueError:
+                  continue
+                else:
+                  n, e, occ = s.split()
+                  eigvalVal[0][-1].append(int(n))
+                  eigvalVal[1][-1].append(float(e))
+                  print ("eigvalVal= ", eigvalVal)
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
 
     def onClose_section_system(self, backend, gIndex, section):
