@@ -41,6 +41,24 @@ class ElkContext(object):
               [recLatticeX[2],recLatticeY[2],recLatticeZ[2]]]
       backend.addValue("x_elk_simulation_reciprocal_cell", recCell)
 
+    def onClose_x_elk_section_xc(self, backend, gIndex, section):
+      xcNr = section["x_elk_xc_functional"][0]
+      xc_internal_map = {
+        2: ['LDA_C_PZ', 'LDA_X_PZ'],
+        3: ['LDA_C_PW'],
+        4: ['LDA_C_XALPHA'],
+        5: ['LDA_C_VBH'],
+        20: ['GGA_C_PBE'],
+        21: ['GGA_X_PBE_R'],
+        22: ['GGA_C_PBE_SOL'],
+        26: ['GGA_X_WC'],
+        30: ['GGA_C_AM05']
+        }
+      for xcName in xc_internal_map[xcNr]:
+        gi = backend.openSection("section_XC_functionals")
+        backend.addValue("XC_functional_name", xcName)
+        backend.closeSection("section_XC_functionals", gi)
+
     def onClose_section_single_configuration_calculation(self, backend, gIndex, section):
       dirPath = os.path.dirname(self.parser.fIn.name)
       dosFile = os.path.join(dirPath, "TDOS.OUT")
@@ -164,6 +182,8 @@ mainFileDescription = \
     SM(r"\s*Total number of core states\s*:\s*(?P<x_elk_core_states>[-0-9.]+)"),
     SM(r"\s*Total number of local-orbitals\s*:\s*(?P<x_elk_lo>[-0-9.]+)"),
     SM(r"\s*Smearing width\s*:\s*(?P<x_elk_smearing_width__hartree>[-0-9.]+)"),
+    SM(startReStr = r"\s*Exchange-correlation functional\s*:\s*(?P<x_elk_xc_functional>[-0-9.]+)",
+       sections = ['x_elk_section_xc'])
            ]),
             SM(name = "single configuration iteration",
               startReStr = r"\|\s*Self-consistent loop started\s*\|",
