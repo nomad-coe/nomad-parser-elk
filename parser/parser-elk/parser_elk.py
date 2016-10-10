@@ -85,8 +85,10 @@ class ElkContext(object):
         eigvalGIndex = backend.openSection("section_eigenvalues")
         with open(eigvalFile) as g:
             eigvalKpoint=[]
-            eigvalVal=[[],[]]
-            eigvalOcc=[[],[]]
+            eigvalVal=[]
+            eigvalOcc=[]
+#            eigvalVal=[[],[]]
+#            eigvalOcc=[[],[]]
             fromH = unit_conversion.convert_unit_function("hartree", "J")
             while 1:
               s = g.readline()
@@ -97,10 +99,12 @@ class ElkContext(object):
               if len(s) < 20:
                 continue
               elif len(s) > 50:
-                eigvalVal[0].append([])
-                eigvalVal[1].append([])
-                eigvalOcc[0].append([])
-                eigvalOcc[1].append([])
+                eigvalVal.append([])
+                eigvalOcc.append([])
+#                eigvalVal[0].append([])
+#                eigvalVal[1].append([])
+#                eigvalOcc[0].append([])
+#                eigvalOcc[1].append([])
                 eigvalKpoint.append(list(map(float, s.split()[1:4])))
 #                print ("eigvalKpoint= ", eigvalKpoint)
               else:
@@ -109,10 +113,12 @@ class ElkContext(object):
                   continue
                 else:
                   n, e, occ = s.split()
-                  eigvalVal[0][-1].append(int(n))
-                  eigvalVal[1][-1].append(fromH(float(e)))
-                  eigvalOcc[0][-1].append(int(n))
-                  eigvalOcc[1][-1].append(float(occ))
+                  eigvalVal[-1].append(fromH(float(e)))
+                  eigvalOcc[-1].append(float(occ))
+#                  eigvalVal[0][-1].append(int(n))
+#                  eigvalVal[1][-1].append(fromH(float(e)))
+#                  eigvalOcc[0][-1].append(int(n))
+#                  eigvalOcc[1][-1].append(float(occ))
 #                  print ("eigvalOcc= ", eigvalOcc)
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
             backend.addArrayValues("eigenvalues_values", np.asarray(eigvalVal))
