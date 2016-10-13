@@ -128,7 +128,7 @@ class ElkContext(object):
 
     def onClose_section_scf_iteration(self, backend, gIndex, section):
       Etot = section["energy_total_scf_iteration"]
-      backend.addValue("energy_total", Etot)
+      backend.addValue("energy_total", Etot[-1])
 
 # description of the input
 mainFileDescription = \
