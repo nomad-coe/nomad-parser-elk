@@ -30,6 +30,7 @@ class ElkContext(object):
       cell = [[latticeX[0],latticeY[0],latticeZ[0]],
               [latticeX[1],latticeY[1],latticeZ[1]],
               [latticeX[2],latticeY[2],latticeZ[2]]]
+#      print ("celll= ", cell)
       backend.addValue("simulation_cell", cell)
 
     def onClose_x_elk_section_reciprocal_lattice_vectors(self, backend, gIndex, section):
@@ -45,14 +46,14 @@ class ElkContext(object):
       xcNr = section["x_elk_xc_functional"][0]
       xc_internal_map = {
         2: ['LDA_C_PZ', 'LDA_X_PZ'],
-        3: ['LDA_C_PW'],
+        3: ['LDA_C_PW', 'LDA_X_PZ'],
         4: ['LDA_C_XALPHA'],
         5: ['LDA_C_VBH'],
-        20: ['GGA_C_PBE'],
-        21: ['GGA_X_PBE_R'],
-        22: ['GGA_C_PBE_SOL'],
-        26: ['GGA_X_WC'],
-        30: ['GGA_C_AM05']
+        20: ['GGA_C_PBE', 'GGA_X_PBE'],
+        21: ['GGA_C_PBE', 'GGA_X_PBE_R'],
+        22: ['GGA_C_PBE_SOL', 'GGA_X_PBE_SOL'],
+        26: ['GGA_C_PBE', 'GGA_X_WC'],
+        30: ['GGA_C_AM05', 'GGA_X_AM05']
         }
       for xcName in xc_internal_map[xcNr]:
         gi = backend.openSection("section_XC_functionals")
@@ -87,26 +88,17 @@ class ElkContext(object):
             eigvalKpoint=[]
             eigvalVal=[]
             eigvalOcc=[]
-#            eigvalVal=[[],[]]
-#            eigvalOcc=[[],[]]
             fromH = unit_conversion.convert_unit_function("hartree", "J")
             while 1:
               s = g.readline()
               if not s: break
               s = s.strip()
-#              print ("s= ", s)
-#              print ("len(s)= ", len(s))
               if len(s) < 20:
                 continue
               elif len(s) > 50:
                 eigvalVal.append([])
                 eigvalOcc.append([])
-#                eigvalVal[0].append([])
-#                eigvalVal[1].append([])
-#                eigvalOcc[0].append([])
-#                eigvalOcc[1].append([])
                 eigvalKpoint.append(list(map(float, s.split()[1:4])))
-#                print ("eigvalKpoint= ", eigvalKpoint)
               else:
                 try: int(s[0])
                 except ValueError:
@@ -115,17 +107,28 @@ class ElkContext(object):
                   n, e, occ = s.split()
                   eigvalVal[-1].append(fromH(float(e)))
                   eigvalOcc[-1].append(float(occ))
-#                  eigvalVal[0][-1].append(int(n))
-#                  eigvalVal[1][-1].append(fromH(float(e)))
-#                  eigvalOcc[0][-1].append(int(n))
-#                  eigvalOcc[1][-1].append(float(occ))
-#                  print ("eigvalOcc= ", eigvalOcc)
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
             backend.addArrayValues("eigenvalues_values", np.asarray(eigvalVal))
             backend.addArrayValues("eigenvalues_occupation", np.asarray(eigvalOcc))
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
+      self.secSystemDescriptionIndex = gIndex
+
+      atom_pos = []
+      for i in ['x', 'y', 'z']:
+         api = section['x_elk_geometry_atom_positions_' + i]
+         if api is not None:
+            atom_pos.append(api)
+      if atom_pos:
+         backend.addArrayValues('atom_positions', np.transpose(np.asarray(atom_pos)))
+      atom_labels = section['x_elk_geometry_atom_labels']
+      if atom_labels is not None:
+         backend.addArrayValues('atom_labels', np.asarray(atom_labels))
+
+    def onClose_section_scf_iteration(self, backend, gIndex, section):
+      Etot = section["energy_total_scf_iteration"]
+      backend.addValue("energy_total", Etot)
 
 # description of the input
 mainFileDescription = \
@@ -222,33 +225,33 @@ mainFileDescription = \
                    SM(r"\s*core\s*:\s*(?P<x_elk_core_charge_scf_iteration>[-0-9.]+)"),
                    SM(r"\s*valence\s*:\s*(?P<x_elk_valence_charge_scf_iteration>[-0-9.]+)"),
                    SM(r"\s*interstitial\s*:\s*(?P<x_elk_interstitial_charge_scf_iteration>[-0-9.]+)"),
-                  ]),
-                SM(name="final_quantities",
-                  startReStr = r"\sConvergence targets achieved\s*\+",
-                  endReStr = r"\| Self-consistent loop stopped\s*\|\+",
-                   subMatchers = [
-                   SM(r"\s*Fermi\s*:\s*(?P<x_elk_fermi_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*sum of eigenvalues\s*:\s*(?P<energy_sum_eigenvalues__hartree>[-0-9.]+)"),
-                   SM(r"\s*electron kinetic\s*:\s*(?P<electronic_kinetic_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*core electron kinetic\s*:\s*(?P<x_elk_core_electron_kinetic_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*Coulomb\s*:\s*(?P<x_elk_coulomb_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*Coulomb potential\s*:\s*(?P<x_elk_coulomb_potential_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*nuclear-nuclear\s*:\s*(?P<x_elk_nuclear_nuclear_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*electron-nuclear\s*:\s*(?P<x_elk_electron_nuclear_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*Hartree\s*:\s*(?P<x_elk_hartree_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*Madelung\s*:\s*(?P<x_elk_madelung_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*xc potential\s*:\s*(?P<energy_XC_potential__hartree>[-0-9.]+)"),
-                   SM(r"\s*exchange\s*:\s*(?P<x_elk_exchange_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*correlation\s*:\s*(?P<x_elk_correlation_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*electron entropic\s*:\s*(?P<x_elk_electron_entropic_energy__hartree>[-0-9.]+)"),
-                   SM(r"\s*total energy\s*:\s*(?P<energy_total__hartree>[-0-9.]+)"),
-                   SM(r"\s*Density of states at Fermi energy\s*:\s*(?P<x_elk_dos_fermi__hartree_1>[-0-9.]+)"),
-                   SM(r"\s*Estimated indirect band gap\s*:\s*(?P<x_elk_indirect_gap__hartree>[-0-9.]+)"),
-                   SM(r"\s*Estimated direct band gap\s*:\s*(?P<x_elk_direct_gap__hartree>[-0-9.]+)"),
-                   SM(r"\s*core\s*:\s*(?P<x_elk_core_charge_final>[-0-9.]+)"),
-                   SM(r"\s*valence\s*:\s*(?P<x_elk_valence_charge_final>[-0-9.]+)"),
-                   SM(r"\s*interstitial\s*:\s*(?P<x_elk_interstitial_charge_final>[-0-9.]+)")
-                   ])
+                  ]) #,
+#                SM(name="final_quantities",
+#                  startReStr = r"\sConvergence targets achieved\s*\+",
+#                  endReStr = r"\| Self-consistent loop stopped\s*\|\+",
+#                   subMatchers = [
+#                   SM(r"\s*Fermi\s*:\s*(?P<x_elk_fermi_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*sum of eigenvalues\s*:\s*(?P<energy_sum_eigenvalues__hartree>[-0-9.]+)"),
+#                   SM(r"\s*electron kinetic\s*:\s*(?P<electronic_kinetic_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*core electron kinetic\s*:\s*(?P<x_elk_core_electron_kinetic_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*Coulomb\s*:\s*(?P<x_elk_coulomb_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*Coulomb potential\s*:\s*(?P<x_elk_coulomb_potential_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*nuclear-nuclear\s*:\s*(?P<x_elk_nuclear_nuclear_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*electron-nuclear\s*:\s*(?P<x_elk_electron_nuclear_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*Hartree\s*:\s*(?P<x_elk_hartree_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*Madelung\s*:\s*(?P<x_elk_madelung_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*xc potential\s*:\s*(?P<energy_XC_potential__hartree>[-0-9.]+)"),
+#                   SM(r"\s*exchange\s*:\s*(?P<x_elk_exchange_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*correlation\s*:\s*(?P<x_elk_correlation_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*electron entropic\s*:\s*(?P<x_elk_electron_entropic_energy__hartree>[-0-9.]+)"),
+#                   SM(r"\s*total energy\s*:\s*(?P<energy_total__hartree>[-0-9.]+)"),
+#                   SM(r"\s*Density of states at Fermi energy\s*:\s*(?P<x_elk_dos_fermi__hartree_1>[-0-9.]+)"),
+#                   SM(r"\s*Estimated indirect band gap\s*:\s*(?P<x_elk_indirect_gap__hartree>[-0-9.]+)"),
+#                   SM(r"\s*Estimated direct band gap\s*:\s*(?P<x_elk_direct_gap__hartree>[-0-9.]+)"),
+#                   SM(r"\s*core\s*:\s*(?P<x_elk_core_charge_final>[-0-9.]+)"),
+#                   SM(r"\s*valence\s*:\s*(?P<x_elk_valence_charge_final>[-0-9.]+)"),
+#                   SM(r"\s*interstitial\s*:\s*(?P<x_elk_interstitial_charge_final>[-0-9.]+)")
+#                   ])
                ]
             )
           ])
