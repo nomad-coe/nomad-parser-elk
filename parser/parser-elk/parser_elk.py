@@ -108,8 +108,8 @@ class ElkContext(object):
                   eigvalVal[-1].append(fromH(float(e)))
                   eigvalOcc[-1].append(float(occ))
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
-            backend.addArrayValues("eigenvalues_values", np.asarray(eigvalVal))
-            backend.addArrayValues("eigenvalues_occupation", np.asarray(eigvalOcc))
+            backend.addArrayValues("eigenvalues_values", np.asarray([eigvalVal]))
+            backend.addArrayValues("eigenvalues_occupation", np.asarray([eigvalOcc]))
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
