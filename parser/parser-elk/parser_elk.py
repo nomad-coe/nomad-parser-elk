@@ -14,14 +14,15 @@ class ElkContext(object):
         self.parser = None
 
     def initialize_values(self):
-        """allows to reset values if the same superContext is used to parse different files"""
-        self.metaInfoEnv = self.parser.parserBuilder.metaInfoEnv
+      """allows to reset values if the same superContext is used to parse different files"""
+      self.metaInfoEnv = self.parser.parserBuilder.metaInfoEnv
 
     def startedParsing(self, path, parser):
-        """called when parsing starts"""
-        self.parser = parser
-        # allows to reset values if the same superContext is used to parse different files
-        self.initialize_values()
+      """called when parsing starts"""
+      self.parser = parser
+      # allows to reset values if the same superContext is used to parse different files
+      self.initialize_values()
+      self.enTot = []
 
     def onClose_x_elk_section_lattice_vectors(self, backend, gIndex, section):
       latticeX = section["x_elk_geometry_lattice_vector_x"]
@@ -111,6 +112,8 @@ class ElkContext(object):
             backend.addArrayValues("eigenvalues_values", np.asarray([eigvalVal]))
             backend.addArrayValues("eigenvalues_occupation", np.asarray([eigvalOcc]))
 
+      backend.addValue("energy_total", self.enTot[-1])
+
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
       self.secSystemDescriptionIndex = gIndex
@@ -128,7 +131,7 @@ class ElkContext(object):
 
     def onClose_section_scf_iteration(self, backend, gIndex, section):
       Etot = section["energy_total_scf_iteration"]
-      backend.addValue("energy_total", Etot[-1])
+      self.enTot.append(Etot[0])
 
 # description of the input
 mainFileDescription = \
