@@ -22,7 +22,10 @@ class ElkContext(object):
       self.parser = parser
       # allows to reset values if the same superContext is used to parse different files
       self.initialize_values()
+
       self.enTot = []
+      self.atom_pos = []
+      self.atom_labels = []
 
     def onClose_x_elk_section_lattice_vectors(self, backend, gIndex, section):
       latticeX = section["x_elk_geometry_lattice_vector_x"]
@@ -118,16 +121,33 @@ class ElkContext(object):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
       self.secSystemDescriptionIndex = gIndex
 
-      atom_pos = []
-      for i in ['x', 'y', 'z']:
-         api = section['x_elk_geometry_atom_positions_' + i]
-         if api is not None:
-            atom_pos.append(api)
-      if atom_pos:
-         backend.addArrayValues('atom_positions', np.transpose(np.asarray(atom_pos)))
-      atom_labels = section['x_elk_geometry_atom_labels']
-      if atom_labels is not None:
-         backend.addArrayValues('atom_labels', np.asarray(atom_labels))
+#      atom_pos = []
+#      for i in ['x', 'y', 'z']:
+#         api = section['x_elk_geometry_atom_positions_' + i]
+#         if api is not None:
+#            atom_pos.append(api)
+#      if atom_pos:
+#         backend.addArrayValues('atom_positions', np.transpose(np.asarray(atom_pos)))
+#      atom_labels = section['x_elk_geometry_atom_labels']
+#      if atom_labels is not None:
+#         backend.addArrayValues('atom_labels', np.asarray(atom_labels))
+
+      if self.atom_pos:
+         backend.addArrayValues('atom_positions', np.asarray(self.atom_pos))
+      self.atom_pos = []
+      if self.atom_labels is not None:
+         backend.addArrayValues('atom_labels', np.asarray(self.atom_labels))
+      self.atom_labels = []
+
+    def onClose_x_elk_section_atoms_group(self, backend, gIndex, section):
+      pos = [section['x_elk_geometry_atom_positions_' + i] for i in ['x', 'y', 'z']]
+      pl = [len(comp) for comp in pos]
+      natom = pl[0]
+      if pl[1] != natom or pl[2] != natom:
+        raise Exception("invalid number of atoms in various components %s" % pl)
+      for i in range(natom):
+        self.atom_pos.append([pos[0][i], pos[1][i], pos[2][i]])
+      self.atom_labels = self.atom_labels + (section['x_elk_geometry_atom_labels'] * natom)
 
     def onClose_section_scf_iteration(self, backend, gIndex, section):
       Etot = section["energy_total_scf_iteration"]
@@ -164,6 +184,7 @@ mainFileDescription = \
     SM(r"\s*Unit cell volume\s*:\s*(?P<x_elk_unit_cell_volume__bohr3>[-0-9.]+)"),
     SM(r"\s*Brillouin zone volume\s*:\s*(?P<x_elk_brillouin_zone_volume__bohr_3>[-0-9.]+)"),
     SM(r"\s*Species\s*:\s*[0-9]\s*\((?P<x_elk_geometry_atom_labels>[-a-zA-Z0-9]+)\)", repeats = True,
+      sections = ["x_elk_section_atoms_group"],
        subMatchers = [
     SM(r"\s*muffin-tin radius\s*:\s*(?P<x_elk_muffin_tin_radius__bohr>[-0-9.]+)"),
     SM(r"\s*number of radial points in muffin-tin\s*:\s*(?P<x_elk_muffin_tin_points>[-0-9.]+)"),
