@@ -26,25 +26,26 @@ class ElkContext(object):
       self.enTot = []
       self.atom_pos = []
       self.atom_labels = []
+      self.spinTreat = None
 
     def onClose_x_elk_section_lattice_vectors(self, backend, gIndex, section):
       latticeX = section["x_elk_geometry_lattice_vector_x"]
       latticeY = section["x_elk_geometry_lattice_vector_y"]
       latticeZ = section["x_elk_geometry_lattice_vector_z"]
-      cell = [[latticeX[0],latticeY[0],latticeZ[0]],
+      cell = np.array([[latticeX[0],latticeY[0],latticeZ[0]],
               [latticeX[1],latticeY[1],latticeZ[1]],
-              [latticeX[2],latticeY[2],latticeZ[2]]]
-#      print ("celll= ", cell)
-      backend.addValue("simulation_cell", cell)
+              [latticeX[2],latticeY[2],latticeZ[2]]])
+#      print ("celll= ", latticeZ)
+      backend.addArrayValues("simulation_cell", cell)
 
     def onClose_x_elk_section_reciprocal_lattice_vectors(self, backend, gIndex, section):
       recLatticeX = section["x_elk_geometry_reciprocal_lattice_vector_x"]
       recLatticeY = section["x_elk_geometry_reciprocal_lattice_vector_y"]
       recLatticeZ = section["x_elk_geometry_reciprocal_lattice_vector_z"]
-      recCell = [[recLatticeX[0],recLatticeY[0],recLatticeZ[0]],
+      recCell = np.array([[recLatticeX[0],recLatticeY[0],recLatticeZ[0]],
               [recLatticeX[1],recLatticeY[1],recLatticeZ[1]],
-              [recLatticeX[2],recLatticeY[2],recLatticeZ[2]]]
-      backend.addValue("x_elk_simulation_reciprocal_cell", recCell)
+              [recLatticeX[2],recLatticeY[2],recLatticeZ[2]]])
+      backend.addArrayValues("x_elk_simulation_reciprocal_cell", recCell)
 
     def onClose_x_elk_section_xc(self, backend, gIndex, section):
       xcNr = section["x_elk_xc_functional"][0]
@@ -114,8 +115,23 @@ class ElkContext(object):
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
             backend.addArrayValues("eigenvalues_values", np.asarray([eigvalVal]))
             backend.addArrayValues("eigenvalues_occupation", np.asarray([eigvalOcc]))
+            backend.closeSection("section_eigenvalues",eigvalGIndex)
 
       backend.addValue("energy_total", self.enTot[-1])
+
+    def onClose_x_elk_section_spin(self, backend, gIndex, section):
+#    pass
+      spin = section["x_elk_spin_treatment"][0]
+#    print("prima",len(spin))
+      spin = spin.strip()
+#    print("dopo",len(spin))
+#      print("spin=",spin,"spin", type(spin))
+      if spin == "spin-polarised":
+#        print("Vero")
+        self.spinTreat = True
+      else:
+#        print("Falso")
+        self.spinTreat = False
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
@@ -138,7 +154,7 @@ class ElkContext(object):
       if self.atom_labels is not None:
          backend.addArrayValues('atom_labels', np.asarray(self.atom_labels))
       self.atom_labels = []
-
+#      print("self.atom_labels=",self.atom_labels)
     def onClose_x_elk_section_atoms_group(self, backend, gIndex, section):
       pos = [section['x_elk_geometry_atom_positions_' + i] for i in ['x', 'y', 'z']]
       pl = [len(comp) for comp in pos]
@@ -186,13 +202,18 @@ mainFileDescription = \
     SM(r"\s*Species\s*:\s*[0-9]\s*\((?P<x_elk_geometry_atom_labels>[-a-zA-Z0-9]+)\)", repeats = True,
       sections = ["x_elk_section_atoms_group"],
        subMatchers = [
-    SM(r"\s*muffin-tin radius\s*:\s*(?P<x_elk_muffin_tin_radius__bohr>[-0-9.]+)"),
-    SM(r"\s*number of radial points in muffin-tin\s*:\s*(?P<x_elk_muffin_tin_points>[-0-9.]+)"),
+#    SM(r"\s*muffin-tin radius\s*:\s*(?P<x_elk_muffin_tin_radius__bohr>[-0-9.]+)"),
+#    SM(r"\s*number of radial points in muffin-tin\s*:\s*(?P<x_elk_muffin_tin_points>[-0-9.]+)"),
     SM(startReStr = r"\s*atomic positions\s*\(lattice\)\, magnetic fields \(Cartesian\)\s*:\s*",
       subMatchers = [
         SM(r"\s*(?P<x_elk_geometry_atom_number>[+0-9]+)\s*:\s*(?P<x_elk_geometry_atom_positions_x__bohr>[-+0-9.]+)\s*(?P<x_elk_geometry_atom_positions_y__bohr>[-+0-9.]+)\s*(?P<x_elk_geometry_atom_positions_z__bohr>[-+0-9.]+)", repeats = True)
       ])
     ]),
+    SM(startReStr = r"\s*Spin treatment\s*:\s*",
+      sections = ["x_elk_section_spin"],
+        subMatchers = [
+        SM(r"\s*(?P<x_elk_spin_treatment>[-a-zA-Z\s*]+)")
+     ]),
     SM(r"\s*k-point grid\s*:\s*(?P<x_elk_number_kpoint_x>[-0-9.]+)\s+(?P<x_elk_number_kpoint_y>[-0-9.]+)\s+(?P<x_elk_number_kpoint_z>[-0-9.]+)"),
     SM(r"\s*k-point offset\s*:\s*(?P<x_elk_kpoint_offset_x>[-0-9.]+)\s+(?P<x_elk_kpoint_offset_y>[-0-9.]+)\s+(?P<x_elk_kpoint_offset_z>[-0-9.]+)"),
     SM(r"\s*Total number of k-points\s*:\s*(?P<x_elk_number_kpoints>[-0-9.]+)"),
