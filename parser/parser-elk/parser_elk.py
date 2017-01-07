@@ -1,51 +1,63 @@
 from builtins import object
 import setup_paths
 import numpy as np
-from nomadcore.simple_parser import mainFunction, AncillaryParser, CachingLevel
-from nomadcore.simple_parser import SimpleMatcher as SM
+from nomadcore.simple_parser import SimpleMatcher as SM, mainFunction
 from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
+from nomadcore.caching_backend import CachingLevel
 from nomadcore.unit_conversion import unit_conversion
+#from nomadcore.simple_parser import mainFunction, AncillaryParser, CachingLevel
+#from nomadcore.simple_parser import SimpleMatcher as SM
+#from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
+#from nomadcore.unit_conversion import unit_conversion
 import os, sys, json, logging
 
 class ElkContext(object):
     """context for elk parser"""
 
-    def __init__(self):
-        self.parser = None
+#    def __init__(self):
+#        self.parser = None
 
-    def initialize_values(self):
-      """allows to reset values if the same superContext is used to parse different files"""
-      self.metaInfoEnv = self.parser.parserBuilder.metaInfoEnv
+#    def initialize_values(self):
+#      """allows to reset values if the same superContext is used to parse different files"""
+#      self.metaInfoEnv = self.parser.parserBuilder.metaInfoEnv
 
     def startedParsing(self, path, parser):
       """called when parsing starts"""
       self.parser = parser
       # allows to reset values if the same superContext is used to parse different files
-      self.initialize_values()
-
+#      self.initialize_values()
+      self.secMethodIndex = None     #LOLLO
+      self.secSystemIndex = None     #LOLLO
       self.enTot = []
       self.atom_pos = []
       self.atom_labels = []
       self.spinTreat = None
 
+    def onOpen_section_system(self, backend, gIndex, section):
+     self.secSystemIndex = gIndex
+
+    def onOpen_section_method(self, backend, gIndex, section):
+      self.secMethodIndex = gIndex
+
     def onClose_x_elk_section_lattice_vectors(self, backend, gIndex, section):
       latticeX = section["x_elk_geometry_lattice_vector_x"]
       latticeY = section["x_elk_geometry_lattice_vector_y"]
       latticeZ = section["x_elk_geometry_lattice_vector_z"]
-      cell = np.array([[latticeX[0],latticeY[0],latticeZ[0]],
+#      print("latticeZ=",latticeZ)
+      cell = [[latticeX[0],latticeY[0],latticeZ[0]],
               [latticeX[1],latticeY[1],latticeZ[1]],
-              [latticeX[2],latticeY[2],latticeZ[2]]])
+              [latticeX[2],latticeY[2],latticeZ[2]]]
 #      print ("celll= ", latticeZ)
-      backend.addArrayValues("simulation_cell", cell)
+      backend.addValue("simulation_cell", cell)
 
     def onClose_x_elk_section_reciprocal_lattice_vectors(self, backend, gIndex, section):
       recLatticeX = section["x_elk_geometry_reciprocal_lattice_vector_x"]
       recLatticeY = section["x_elk_geometry_reciprocal_lattice_vector_y"]
       recLatticeZ = section["x_elk_geometry_reciprocal_lattice_vector_z"]
-      recCell = np.array([[recLatticeX[0],recLatticeY[0],recLatticeZ[0]],
+      recCell = [[recLatticeX[0],recLatticeY[0],recLatticeZ[0]],
               [recLatticeX[1],recLatticeY[1],recLatticeZ[1]],
-              [recLatticeX[2],recLatticeY[2],recLatticeZ[2]]])
-      backend.addArrayValues("x_elk_simulation_reciprocal_cell", recCell)
+              [recLatticeX[2],recLatticeY[2],recLatticeZ[2]]]
+      backend.addValue("x_elk_simulation_reciprocal_cell", recCell)
 
     def onClose_x_elk_section_xc(self, backend, gIndex, section):
       xcNr = section["x_elk_xc_functional"][0]
@@ -66,6 +78,8 @@ class ElkContext(object):
         backend.closeSection("section_XC_functionals", gi)
 
     def onClose_section_single_configuration_calculation(self, backend, gIndex, section):
+      backend.addValue('single_configuration_to_calculation_method_ref', self.secMethodIndex)
+      backend.addValue('single_configuration_calculation_to_system_ref', self.secSystemIndex)
       dirPath = os.path.dirname(self.parser.fIn.name)
       dosFile = os.path.join(dirPath, "TDOS.OUT")
       eigvalFile = os.path.join(dirPath, "EIGVAL.OUT")
@@ -147,6 +161,7 @@ class ElkContext(object):
 #      atom_labels = section['x_elk_geometry_atom_labels']
 #      if atom_labels is not None:
 #         backend.addArrayValues('atom_labels', np.asarray(atom_labels))
+      self.secSystemDescriptionIndex = gIndex
 
       if self.atom_pos:
          backend.addArrayValues('atom_positions', np.asarray(self.atom_pos))
@@ -321,5 +336,6 @@ cachingLevelForMetaName = {
                           }
 
 if __name__ == "__main__":
-    superContext = ElkContext()
-    mainFunction(mainFileDescription, metaInfoEnv, parserInfo, superContext = superContext)
+#    superContext = ElkContext()
+    mainFunction(mainFileDescription, metaInfoEnv, parserInfo, cachingLevelForMetaName = cachingLevelForMetaName, superContext=ElkContext())
+#    mainFunction(mainFileDescription, metaInfoEnv, parserInfo, superContext = superContext)
