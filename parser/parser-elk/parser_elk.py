@@ -5,29 +5,16 @@ from nomadcore.simple_parser import SimpleMatcher as SM, mainFunction
 from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
 from nomadcore.caching_backend import CachingLevel
 from nomadcore.unit_conversion import unit_conversion
-#from nomadcore.simple_parser import mainFunction, AncillaryParser, CachingLevel
-#from nomadcore.simple_parser import SimpleMatcher as SM
-#from nomadcore.local_meta_info import loadJsonFile, InfoKindEl
-#from nomadcore.unit_conversion import unit_conversion
 import os, sys, json, logging
 
 class ElkContext(object):
     """context for elk parser"""
 
-#    def __init__(self):
-#        self.parser = None
-
-#    def initialize_values(self):
-#      """allows to reset values if the same superContext is used to parse different files"""
-#      self.metaInfoEnv = self.parser.parserBuilder.metaInfoEnv
-
     def startedParsing(self, path, parser):
       """called when parsing starts"""
       self.parser = parser
-      # allows to reset values if the same superContext is used to parse different files
-#      self.initialize_values()
-      self.secMethodIndex = None     #LOLLO
-      self.secSystemIndex = None     #LOLLO
+      self.secMethodIndex = None  
+      self.secSystemIndex = None 
       self.enTot = []
       self.atom_pos = []
       self.atom_labels = []
@@ -43,11 +30,9 @@ class ElkContext(object):
       latticeX = section["x_elk_geometry_lattice_vector_x"]
       latticeY = section["x_elk_geometry_lattice_vector_y"]
       latticeZ = section["x_elk_geometry_lattice_vector_z"]
-#      print("latticeZ=",latticeZ)
       cell = [[latticeX[0],latticeY[0],latticeZ[0]],
               [latticeX[1],latticeY[1],latticeZ[1]],
               [latticeX[2],latticeY[2],latticeZ[2]]]
-#      print ("celll= ", latticeZ)
       backend.addValue("simulation_cell", cell)
 
     def onClose_x_elk_section_reciprocal_lattice_vectors(self, backend, gIndex, section):
@@ -107,12 +92,19 @@ class ElkContext(object):
             eigvalKpoint=[]
             eigvalVal=[]
             eigvalOcc=[]
+            eigvalValSpin = [[],[]]
+            eigvalOccSpin = [[],[]]
             fromH = unit_conversion.convert_unit_function("hartree", "J")
             while 1:
               s = g.readline()
               if not s: break
               s = s.strip()
               if len(s) < 20:
+                if "nstsv" in s.split():
+                  nstsv = int(s.split()[0])
+                  nstsv2=int(nstsv/2)
+                elif "nkpt" in s.split():
+                  nkpt = int(s.split()[0])
                 continue
               elif len(s) > 50:
                 eigvalVal.append([])
@@ -126,41 +118,36 @@ class ElkContext(object):
                   n, e, occ = s.split()
                   eigvalVal[-1].append(fromH(float(e)))
                   eigvalOcc[-1].append(float(occ))
+            if not self.spinTreat:
+              backend.addArrayValues("eigenvalues_values", np.asarray([eigvalVal]))
+              backend.addArrayValues("eigenvalues_occupation", np.asarray([eigvalOcc]))
+            else:
+              for i in range(0,nkpt):
+                eigvalValSpin[0].append(eigvalVal[i][0:nstsv2])
+                eigvalOccSpin[0].append(eigvalOcc[i][0:nstsv2])
+                eigvalValSpin[1].append(eigvalVal[i][nstsv2:nstsv])
+                eigvalOccSpin[1].append(eigvalOcc[i][nstsv2:nstsv])
+              backend.addArrayValues("eigenvalues_values", np.asarray(eigvalValSpin))
+              backend.addArrayValues("eigenvalues_occupation", np.asarray(eigvalOccSpin))
             backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
-            backend.addArrayValues("eigenvalues_values", np.asarray([eigvalVal]))
-            backend.addArrayValues("eigenvalues_occupation", np.asarray([eigvalOcc]))
             backend.closeSection("section_eigenvalues",eigvalGIndex)
-
+#            backend.addArrayValues("eigenvalues_kpoints", np.asarray(eigvalKpoint))
+#            backend.addArrayValues("eigenvalues_values", np.asarray([eigvalVal]))
+#            backend.addArrayValues("eigenvalues_occupation", np.asarray([eigvalOcc]))
+#            backend.closeSection("section_eigenvalues",eigvalGIndex)
       backend.addValue("energy_total", self.enTot[-1])
 
     def onClose_x_elk_section_spin(self, backend, gIndex, section):
-#    pass
       spin = section["x_elk_spin_treatment"][0]
-#    print("prima",len(spin))
       spin = spin.strip()
-#    print("dopo",len(spin))
-#      print("spin=",spin,"spin", type(spin))
       if spin == "spin-polarised":
-#        print("Vero")
         self.spinTreat = True
       else:
-#        print("Falso")
         self.spinTreat = False
 
     def onClose_section_system(self, backend, gIndex, section):
       backend.addArrayValues('configuration_periodic_dimensions', np.asarray([True, True, True]))
       self.secSystemDescriptionIndex = gIndex
-
-#      atom_pos = []
-#      for i in ['x', 'y', 'z']:
-#         api = section['x_elk_geometry_atom_positions_' + i]
-#         if api is not None:
-#            atom_pos.append(api)
-#      if atom_pos:
-#         backend.addArrayValues('atom_positions', np.transpose(np.asarray(atom_pos)))
-#      atom_labels = section['x_elk_geometry_atom_labels']
-#      if atom_labels is not None:
-#         backend.addArrayValues('atom_labels', np.asarray(atom_labels))
       self.secSystemDescriptionIndex = gIndex
 
       if self.atom_pos:
@@ -169,7 +156,6 @@ class ElkContext(object):
       if self.atom_labels is not None:
          backend.addArrayValues('atom_labels', np.asarray(self.atom_labels))
       self.atom_labels = []
-#      print("self.atom_labels=",self.atom_labels)
     def onClose_x_elk_section_atoms_group(self, backend, gIndex, section):
       pos = [section['x_elk_geometry_atom_positions_' + i] for i in ['x', 'y', 'z']]
       pl = [len(comp) for comp in pos]
@@ -286,32 +272,6 @@ mainFileDescription = \
                    SM(r"\s*valence\s*:\s*(?P<x_elk_valence_charge_scf_iteration>[-0-9.]+)"),
                    SM(r"\s*interstitial\s*:\s*(?P<x_elk_interstitial_charge_scf_iteration>[-0-9.]+)"),
                   ]) #,
-#                SM(name="final_quantities",
-#                  startReStr = r"\sConvergence targets achieved\s*\+",
-#                  endReStr = r"\| Self-consistent loop stopped\s*\|\+",
-#                   subMatchers = [
-#                   SM(r"\s*Fermi\s*:\s*(?P<x_elk_fermi_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*sum of eigenvalues\s*:\s*(?P<energy_sum_eigenvalues__hartree>[-0-9.]+)"),
-#                   SM(r"\s*electron kinetic\s*:\s*(?P<electronic_kinetic_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*core electron kinetic\s*:\s*(?P<x_elk_core_electron_kinetic_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*Coulomb\s*:\s*(?P<x_elk_coulomb_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*Coulomb potential\s*:\s*(?P<x_elk_coulomb_potential_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*nuclear-nuclear\s*:\s*(?P<x_elk_nuclear_nuclear_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*electron-nuclear\s*:\s*(?P<x_elk_electron_nuclear_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*Hartree\s*:\s*(?P<x_elk_hartree_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*Madelung\s*:\s*(?P<x_elk_madelung_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*xc potential\s*:\s*(?P<energy_XC_potential__hartree>[-0-9.]+)"),
-#                   SM(r"\s*exchange\s*:\s*(?P<x_elk_exchange_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*correlation\s*:\s*(?P<x_elk_correlation_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*electron entropic\s*:\s*(?P<x_elk_electron_entropic_energy__hartree>[-0-9.]+)"),
-#                   SM(r"\s*total energy\s*:\s*(?P<energy_total__hartree>[-0-9.]+)"),
-#                   SM(r"\s*Density of states at Fermi energy\s*:\s*(?P<x_elk_dos_fermi__hartree_1>[-0-9.]+)"),
-#                   SM(r"\s*Estimated indirect band gap\s*:\s*(?P<x_elk_indirect_gap__hartree>[-0-9.]+)"),
-#                   SM(r"\s*Estimated direct band gap\s*:\s*(?P<x_elk_direct_gap__hartree>[-0-9.]+)"),
-#                   SM(r"\s*core\s*:\s*(?P<x_elk_core_charge_final>[-0-9.]+)"),
-#                   SM(r"\s*valence\s*:\s*(?P<x_elk_valence_charge_final>[-0-9.]+)"),
-#                   SM(r"\s*interstitial\s*:\s*(?P<x_elk_interstitial_charge_final>[-0-9.]+)")
-#                   ])
                ]
             )
           ])
@@ -336,6 +296,4 @@ cachingLevelForMetaName = {
                           }
 
 if __name__ == "__main__":
-#    superContext = ElkContext()
     mainFunction(mainFileDescription, metaInfoEnv, parserInfo, cachingLevelForMetaName = cachingLevelForMetaName, superContext=ElkContext())
-#    mainFunction(mainFileDescription, metaInfoEnv, parserInfo, superContext = superContext)
