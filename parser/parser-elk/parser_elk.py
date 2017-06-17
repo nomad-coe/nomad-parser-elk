@@ -182,7 +182,7 @@ mainFileDescription = \
             sections = ["section_run", "section_method"],
          subMatchers = [
            SM(name = 'input',
-              startReStr = r"\|\sGround-state run starting from atomic densities\s\|\s",
+              startReStr = r"\|\sGround-state\s*[-a-zA-Z\s]+\s*\|\s",
               endReStr = r"\|\sDensity and potential initialised from atomic data\s",
               sections = ['section_system'],
               subMatchers = [
@@ -246,7 +246,7 @@ mainFileDescription = \
               repeats = True,
               subMatchers = [
                 SM(name = "scfi totE",
-                 startReStr =r"\|\s*Loop number\s*:",
+                 startReStr =r"\|\s*[-a-zA-Z]+ number\s*:",
                   sections = ["section_scf_iteration"],
                   repeats = True,
                   subMatchers = [
@@ -263,8 +263,8 @@ mainFileDescription = \
                    SM(r"\s*xc potential\s*:\s*(?P<energy_XC_potential_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*exchange\s*:\s*(?P<x_elk_exchange_energy_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*correlation\s*:\s*(?P<x_elk_correlation_energy_scf_iteration__hartree>[-0-9.]+)"),
-                   SM(r"\s*electron entropic\s*:\s*(?P<x_elk_electron_entropic_energy_scf_iteration__hartree>[-0-9.]+)"),
-                   SM(r"\s*total energy\s*:\s*(?P<energy_total_scf_iteration__hartree>[-0-9.]+)"),
+                   SM(r"\s*electron entropic\s*:\s*(?P<x_elk_electron_entropic_energy_scf_iteration__hartree>[-0-9.]+([E]?[-]?[0-9]+))"),
+                   SM(r"\s*total energy\s*:\s*(?P<energy_total_scf_iteration__hartree>[-0-9.]+([E]?[-]?[0-9]+))"),
                    SM(r"\s*Density of states at Fermi energy\s*:\s*(?P<x_elk_dos_fermi_scf_iteration__hartree_1>[-0-9.]+)"),
                    SM(r"\s*Estimated indirect band gap\s*:\s*(?P<x_elk_indirect_gap_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*Estimated direct band gap\s*:\s*(?P<x_elk_direct_gap_scf_iteration__hartree>[-0-9.]+)"),
