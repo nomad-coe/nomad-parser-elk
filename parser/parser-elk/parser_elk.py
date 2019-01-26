@@ -72,12 +72,12 @@ class ElkContext(object):
         30: ['GGA_C_AM05', 'GGA_X_AM05']
         }
       for xcName in xc_internal_map[xcNr]:
-        gi = backend.openSection("section_XC_functionals")
-        backend.addValue("XC_functional_name", xcName)
-        backend.closeSection("section_XC_functionals", gi)
+        gi = backend.openSection("section_xc_functionals")
+        backend.addValue("xc_functional_name", xcName)
+        backend.closeSection("section_xc_functionals", gi)
 
     def onClose_section_single_configuration_calculation(self, backend, gIndex, section):
-      backend.addValue('single_configuration_to_calculation_method_ref', self.secMethodIndex)
+      backend.addValue('single_configuration_calculation_to_method_ref', self.secMethodIndex)
       backend.addValue('single_configuration_calculation_to_system_ref', self.secSystemIndex)
       dirPath = os.path.dirname(self.parser.fIn.name)
       dosFile = os.path.join(dirPath, "TDOS.OUT")
@@ -274,7 +274,7 @@ mainFileDescription = \
                    SM(r"\s*electron-nuclear\s*:\s*(?P<x_elk_electron_nuclear_energy_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*Hartree\s*:\s*(?P<x_elk_hartree_energy_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*Madelung\s*:\s*(?P<x_elk_madelung_energy_scf_iteration__hartree>[-0-9.]+)"),
-                   SM(r"\s*xc potential\s*:\s*(?P<energy_XC_potential_scf_iteration__hartree>[-0-9.]+)"),
+                   SM(r"\s*xc potential\s*:\s*(?P<energy_xc_potential_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*exchange\s*:\s*(?P<x_elk_exchange_energy_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*correlation\s*:\s*(?P<x_elk_correlation_energy_scf_iteration__hartree>[-0-9.]+)"),
                    SM(r"\s*electron entropic\s*:\s*(?P<x_elk_electron_entropic_energy_scf_iteration__hartree>[-0-9.]+([E]?[-]?[0-9]+))"),
