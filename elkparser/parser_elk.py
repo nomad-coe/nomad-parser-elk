@@ -310,10 +310,6 @@ cachingLevelForMetaName = {
                           }
 
 
-import nomad_meta_info
-metaInfoPath = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(nomad_meta_info.__file__)), "elk.nomadmetainfo.json"))
-metaInfoEnv, warnings = loadJsonFile(filePath = metaInfoPath, dependencyLoader = None, extraArgsHandling = InfoKindEl.ADD_EXTRA_ARGS, uri = None)
-
 class ElkParser():
    """ A proper class envolop for running this parser from within python. """
    def __init__(self, backend, **kwargs):
@@ -323,17 +319,14 @@ class ElkParser():
        from unittest.mock import patch
        logging.info('elk parser started')
        logging.getLogger('nomadcore').setLevel(logging.WARNING)
-       backend = self.backend_factory(metaInfoEnv)
+       backend = self.backend_factory("elk.nomadmetainfo.json")
        with patch.object(sys, 'argv', ['<exe>', '--uri', 'nmd://uri', mainfile]):
            mainFunction(
                mainFileDescription=mainFileDescription,
-               metaInfoEnv=metaInfoEnv,
+               metaInfoEnv=None,
                parserInfo = parserInfo,
                cachingLevelForMetaName = cachingLevelForMetaName,
                superContext=ElkContext(),
                superBackend=backend,
                defaultSectionCachingLevel = True)
        return backend
-
-if __name__ == "__main__":
-    mainFunction(mainFileDescription, metaInfoEnv, parserInfo, cachingLevelForMetaName = cachingLevelForMetaName, superContext=ElkContext())
