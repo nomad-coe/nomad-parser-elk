@@ -1,7 +1,0 @@
-code-label: Elk
-code-label-style: Only E in capitals
-code-url: http://elk.sourceforge.net/
-parser-dir-name: dependencies/parsers/elk/
-parser-git-url: https://gitlab.mpcdf.mpg.de/nomad-lab/parser-elk
-parser-specific: ''
-table-of-files: ''
