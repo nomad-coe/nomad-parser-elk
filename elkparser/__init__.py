@@ -17,4 +17,4 @@
 # limitations under the License.
 #
 
-from elkparser.parser_elk import ElkParser
+from .elk_parser import ElkParser
