@@ -55,7 +55,7 @@ class ElkParser(BasicParser):
             energy_reference_fermi=(rf'\n *Fermi\s*\:\s*({re_f})', lambda x: [x]),
             energy_total=rf'\n *total energy\s*\:\s*({re_f})',
             energy_sum_eigenvalues=rf'\n *sum of eigenvalues\s*\:\s*({re_f})',
-            electronic_kinetic_energy=rf'\n *electron kinetic\s*\:\s*({re_f})',
+            energy_kinetic_electronic=rf'\n *electron kinetic\s*\:\s*({re_f})',
             energy_correction_hartree=rf'\n *Hartree\s*\:\s*({re_f})',
-            energy_C=rf'\n *correlation\s*\:\s*({re_f})',
-            energy_X=rf'\n *exchange\s*\:\s*({re_f})')
+            energy_correlation=rf'\n *correlation\s*\:\s*({re_f})',
+            energy_exchange=rf'\n *exchange\s*\:\s*({re_f})')
