@@ -25,6 +25,9 @@ from nomad.metainfo import (  # pylint: disable=unused-import
 from nomad.datamodel.metainfo import run
 
 
+m_package = Package()
+
+
 class x_elk_section_lattice_vectors(MSection):
     '''
     lattice vectors
