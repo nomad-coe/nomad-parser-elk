@@ -22,7 +22,7 @@ from nomad.metainfo import (  # pylint: disable=unused-import
     MSection, MCategory, Category, Package, Quantity, Section, SubSection, SectionProxy,
     Reference
 )
-from nomad.datamodel.metainfo import run
+from nomad.datamodel.metainfo import simulation
 
 
 m_package = Package()
@@ -168,7 +168,7 @@ class x_elk_section_xc(MSection):
         ''')
 
 
-class System(run.system.System):
+class System(simulation.system.System):
 
     m_def = Section(validate=False, extends_base_section=True)
 
@@ -411,7 +411,7 @@ class System(run.system.System):
         repeats=True)
 
 
-class ScfIteration(run.calculation.ScfIteration):
+class ScfIteration(simulation.calculation.ScfIteration):
 
     m_def = Section(validate=False, extends_base_section=True)
 
@@ -549,7 +549,7 @@ class ScfIteration(run.calculation.ScfIteration):
         ''')
 
 
-class Calculation(run.calculation.Calculation):
+class Calculation(simulation.calculation.Calculation):
 
     m_def = Section(validate=False, extends_base_section=True)
 
